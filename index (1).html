@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bar da Festa — Simulador</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f0e0c;
+  --bg2: #181713;
+  --bg3: #221f1a;
+  --border: rgba(255,255,255,0.08);
+  --border2: rgba(255,255,255,0.14);
+  --text: #f0ece4;
+  --muted: #7a7568;
+  --accent: #d4a84b;
+  --accent2: #8bc08a;
+  --red: #e05a5a;
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-mono: 'DM Mono', monospace;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-mono); min-height: 100vh; line-height: 1.6; }
+
+.header { padding: 2.5rem 2rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1rem; }
+.header h1 { font-family: var(--font-display); font-size: 2.4rem; font-weight: 300; color: var(--text); letter-spacing: -0.02em; line-height: 1; }
+.header h1 span { color: var(--accent); font-style: italic; }
+.header-meta { font-size: 0.78rem; color: var(--muted); text-align: right; }
+.header-meta strong { color: var(--text); font-weight: 500; }
+
+.nav { display: flex; gap: 0; border-bottom: 1px solid var(--border); padding: 0 2rem; overflow-x: auto; }
+.nav button { background: none; border: none; border-bottom: 2px solid transparent; color: var(--muted); font-family: var(--font-mono); font-size: 0.8rem; padding: 0.9rem 1.2rem; cursor: pointer; white-space: nowrap; transition: color 0.15s, border-color 0.15s; letter-spacing: 0.05em; text-transform: uppercase; }
+.nav button:hover { color: var(--text); }
+.nav button.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+.main { padding: 2rem; max-width: 980px; margin: 0 auto; }
+.panel { display: none; }
+.panel.active { display: block; }
+
+.card { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem 1.5rem; margin-bottom: 1rem; }
+.card h3 { font-family: var(--font-display); font-weight: 300; font-size: 1.1rem; color: var(--accent); margin-bottom: 1rem; letter-spacing: -0.01em; }
+
+.metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin: 1.25rem 0; }
+.metric { background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 0.9rem 1rem; }
+.metric .label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+.metric .value { font-family: var(--font-display); font-size: 1.6rem; font-weight: 300; color: var(--text); }
+.metric .sub { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+
+table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+th { text-align: left; padding: 6px 10px; color: var(--muted); font-weight: 500; border-bottom: 1px solid var(--border); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; }
+td { padding: 7px 10px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; }
+td.num { text-align: right; font-variant-numeric: tabular-nums; color: var(--accent); }
+tr:last-child td { border-bottom: none; }
+.tfoot-row td { font-weight: 500; background: var(--bg3); color: var(--text); }
+.tfoot-row td.num { color: var(--accent); }
+
+.badge { display: inline-block; font-size: 0.7rem; padding: 2px 7px; border-radius: 3px; font-weight: 500; letter-spacing: 0.04em; }
+.badge-ok { background: rgba(139,192,138,0.15); color: var(--accent2); }
+.badge-warn { background: rgba(212,168,75,0.15); color: var(--accent); }
+.badge-danger { background: rgba(224,90,90,0.15); color: var(--red); }
+
+.sc-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 1.25rem; }
+.sc-card { border: 1px solid var(--border); border-radius: 6px; padding: 0.85rem 1rem; cursor: pointer; transition: border-color 0.15s, background 0.15s; text-align: center; }
+.sc-card:hover { background: var(--bg3); }
+.sc-card.selected { border-color: var(--accent); background: rgba(212,168,75,0.06); }
+.sc-card .name { font-size: 0.88rem; font-weight: 500; color: var(--text); margin-bottom: 3px; }
+.sc-card .desc { font-size: 0.72rem; color: var(--muted); line-height: 1.5; }
+
+.slider-row { display: flex; align-items: center; gap: 12px; margin-bottom: 0.85rem; }
+.slider-row label { font-size: 0.78rem; color: var(--muted); min-width: 170px; text-transform: uppercase; letter-spacing: 0.05em; }
+.slider-row input[type=range] { flex: 1; -webkit-appearance: none; height: 3px; background: var(--border2); border-radius: 2px; outline: none; }
+.slider-row input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--accent); cursor: pointer; }
+.slider-row .val { font-size: 0.82rem; font-weight: 500; min-width: 44px; text-align: right; color: var(--accent); }
+
+.pinput { width: 68px; background: var(--bg3); border: 1px solid var(--border2); border-radius: 4px; padding: 4px 7px; color: var(--accent); font-family: var(--font-mono); font-size: 0.82rem; text-align: right; }
+.pinput:focus { outline: none; border-color: var(--accent); }
+
+/* qty input — editable quantity in table */
+.qinput { width: 52px; background: var(--bg3); border: 1px solid var(--border2); border-radius: 4px; padding: 3px 6px; color: var(--accent2); font-family: var(--font-mono); font-size: 0.82rem; text-align: center; }
+.qinput:focus { outline: none; border-color: var(--accent2); }
+/* price unit input — editable price in table */
+.puinput { width: 62px; background: var(--bg3); border: 1px solid var(--border2); border-radius: 4px; padding: 3px 6px; color: var(--accent); font-family: var(--font-mono); font-size: 0.82rem; text-align: right; }
+.puinput:focus { outline: none; border-color: var(--accent); }
+
+.price-row { display: flex; flex-wrap: wrap; gap: 1rem 2rem; margin-bottom: 1.25rem; align-items: center; padding: 1rem 1.25rem; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; }
+.price-row span { font-size: 0.78rem; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+.price-row span strong { color: var(--text); }
+
+.result-box { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem 1.5rem; margin-top: 1rem; display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+.result-box .big { font-family: var(--font-display); font-size: 2.8rem; font-weight: 300; letter-spacing: -0.02em; }
+.result-box .big.green { color: var(--accent2); }
+.result-box .big.red { color: var(--red); }
+.result-box .ctx { font-size: 0.75rem; color: var(--muted); }
+
+.gar-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap: 10px; margin-bottom: 1.25rem; }
+.gar-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.1rem; }
+.gar-card .gname { font-family: var(--font-display); font-size: 1rem; font-weight: 300; color: var(--accent); margin-bottom: 2px; }
+.gar-card .gml { font-size: 0.72rem; color: var(--muted); margin-bottom: 0.75rem; }
+.gar-row { display: flex; justify-content: space-between; font-size: 0.78rem; padding: 4px 0; border-bottom: 1px solid var(--border); }
+.gar-row:last-child { border-bottom: none; }
+.gar-row .lbl { color: var(--muted); }
+.gar-row .vg { font-weight: 500; }
+.gar-row .vg.green { color: var(--accent2); }
+.gar-row .vg.red { color: var(--red); }
+
+.note { background: rgba(212,168,75,0.06); border: 1px solid rgba(212,168,75,0.2); border-radius: 6px; padding: 0.85rem 1rem; font-size: 0.78rem; color: var(--muted); margin-top: 0.75rem; line-height: 1.7; }
+.note strong { color: var(--accent); }
+
+.edit-hint { font-size: 0.72rem; color: var(--muted); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 6px; }
+.edit-hint::before { content: '✎'; color: var(--accent2); }
+
+hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
+
+.footer { text-align: center; padding: 2rem; color: var(--muted); font-size: 0.72rem; border-top: 1px solid var(--border); margin-top: 3rem; letter-spacing: 0.05em; }
+
+@media(max-width:600px){
+  .header { padding: 1.5rem 1rem 1rem; }
+  .header h1 { font-size: 1.8rem; }
+  .nav { padding: 0 1rem; }
+  .main { padding: 1.25rem 1rem; }
+  .sc-grid { grid-template-columns: 1fr; }
+  .slider-row label { min-width: 110px; font-size: 0.7rem; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>Bar da <span>Festa</span></h1>
+    <div style="font-size:0.78rem;color:var(--muted);margin-top:4px">Simulador de custos, consumo e faturação</div>
+  </div>
+  <div class="header-meta">
+    <strong id="hd-pessoas">325 pessoas</strong><br>
+    23h00 – 04h00 · 5 horas<br>
+    <span id="hd-barris">10 barris × 30L cerveja</span>
+  </div>
+</div>
+
+<nav class="nav">
+  <button class="active" onclick="showTab('compras',this)">Lista de compras</button>
+  <button onclick="showTab('drinks',this)">Composição dos drinks</button>
+  <button onclick="showTab('garrafas',this)">Faturação por garrafa</button>
+  <button onclick="showTab('resultado',this)">Resultado financeiro</button>
+</nav>
+
+<main class="main">
+
+<!-- COMPRAS -->
+<div id="tab-compras" class="panel active">
+  <p style="font-size:0.78rem;color:var(--muted);margin-bottom:0.5rem">Ponto de partida: referência de 200 pessoas escalada para 325. <strong style="color:var(--accent2)">Podes editar quantidades e preços diretamente na tabela</strong> — tudo atualiza automaticamente.</p>
+  <div class="edit-hint">Campos a verde = quantidade &nbsp;·&nbsp; campos a amarelo = preço unitário</div>
+
+  <div class="card">
+    <h3>Espirituosas</h3>
+    <table>
+      <thead><tr><th>Produto</th><th style="text-align:center">Qtd (garrafas)</th><th style="text-align:right">Preço unit.</th><th class="num">Total</th></tr></thead>
+      <tbody id="tb-spirits"></tbody>
+      <tfoot><tr class="tfoot-row"><td colspan="3" style="text-align:right">Subtotal espirituosas</td><td class="num" id="tot-s">—</td></tr></tfoot>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Misturadores</h3>
+    <table>
+      <thead><tr><th>Produto</th><th style="text-align:center">Qtd (un.)</th><th style="text-align:right">Preço unit.</th><th class="num">Total</th></tr></thead>
+      <tbody id="tb-mixers"></tbody>
+      <tfoot><tr class="tfoot-row"><td colspan="3" style="text-align:right">Subtotal misturadores</td><td class="num" id="tot-m">—</td></tr></tfoot>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Cerveja (barris)</h3>
+    <table>
+      <thead><tr><th>Item</th><th style="text-align:center">Qtd (barris)</th><th>Preço/barril</th><th class="num">Total</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Barril 30L — Sagres / Super Bock</td>
+          <td style="text-align:center"><input class="qinput" type="number" min="1" max="50" step="1" value="10" id="q-barris" oninput="recalcAll()"></td>
+          <td><input class="pinput" type="number" min="50" max="200" step="5" value="90" id="p-barril" oninput="recalcAll()"> €</td>
+          <td class="num" id="tot-b">—</td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="font-size:0.72rem;color:var(--muted);margin-top:0.75rem" id="beer-litros-note">10 barris = 300 L de cerveja</div>
+  </div>
+
+  <div class="card">
+    <h3>Insumos</h3>
+    <table>
+      <thead><tr><th>Item</th><th style="text-align:center">Qtd</th><th style="text-align:right">Preço unit.</th><th class="num">Total</th></tr></thead>
+      <tbody id="tb-outros"></tbody>
+      <tfoot><tr class="tfoot-row"><td colspan="3" style="text-align:right">Subtotal insumos</td><td class="num" id="tot-o">—</td></tr></tfoot>
+    </table>
+  </div>
+
+  <div class="metric-grid">
+    <div class="metric"><div class="label">Custo total compras</div><div class="value" id="m-grand">—</div></div>
+    <div class="metric"><div class="label">Custo por pessoa</div><div class="value" id="m-cpp">—</div></div>
+    <div class="metric"><div class="label">Litros espirituosas</div><div class="value" id="m-ls">—</div></div>
+    <div class="metric"><div class="label">Litros cerveja</div><div class="value" id="m-lb">—</div><div class="sub" id="m-lb-sub">—</div></div>
+  </div>
+</div>
+
+<!-- DRINKS -->
+<div id="tab-drinks" class="panel">
+  <p style="font-size:0.78rem;color:var(--muted);margin-bottom:1.25rem">Composição padrão de bar europeu. Dose padrão = 40 ml de espirituosa (1 dose) ou 80 ml (dose dupla).</p>
+  <div class="card">
+    <h3>Copo grande — 500 ml</h3>
+    <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.85rem">Dose dupla (80 ml espirituosa) + 420 ml mistura + gelo</div>
+    <table>
+      <thead><tr><th>Drink</th><th>Espirituosa</th><th>Mistura</th><th>Gelo</th></tr></thead>
+      <tbody>
+        <tr><td style="color:var(--accent);font-weight:500">Gin tónico</td><td>80 ml gin</td><td>420 ml água tónica</td><td>~80 g</td></tr>
+        <tr><td style="color:var(--accent);font-weight:500">Vodka limão</td><td>80 ml vodka</td><td>300 ml tónica + 120 ml sumo limão</td><td>~80 g</td></tr>
+        <tr><td style="color:var(--accent);font-weight:500">Whisky cola</td><td>80 ml whisky</td><td>420 ml Coca-Cola</td><td>~80 g</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Copo pequeno — 300 ml</h3>
+    <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.85rem">Dose simples (40 ml espirituosa) + 260 ml mistura + gelo</div>
+    <table>
+      <thead><tr><th>Drink</th><th>Espirituosa</th><th>Mistura</th><th>Gelo</th></tr></thead>
+      <tbody>
+        <tr><td style="color:var(--accent);font-weight:500">Gin tónico</td><td>40 ml gin</td><td>260 ml água tónica</td><td>~50 g</td></tr>
+        <tr><td style="color:var(--accent);font-weight:500">Vodka limão</td><td>40 ml vodka</td><td>180 ml tónica + 80 ml sumo limão</td><td>~50 g</td></tr>
+        <tr><td style="color:var(--accent);font-weight:500">Whisky cola</td><td>40 ml whisky</td><td>260 ml Coca-Cola</td><td>~50 g</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Cerveja de pressão (barril)</h3>
+    <table>
+      <thead><tr><th>Formato</th><th>Volume líquido</th><th>Espuma / perda</th><th>Copo</th></tr></thead>
+      <tbody>
+        <tr><td style="color:var(--accent);font-weight:500">Cerveja pequena</td><td>~220 ml</td><td>~80 ml</td><td>300 ml</td></tr>
+        <tr><td style="color:var(--accent);font-weight:500">Cerveja grande / imperial</td><td>~380 ml</td><td>~120 ml</td><td>500 ml</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note">
+    <strong>Gelo:</strong> Cada drink usa ~65 g em média. Para eventos de verão ou locais quentes, conta com 18–22 sacos de 2 kg. Mantém sempre gelo extra em arcas frigoríficas separadas para arrefecer garrafas e barris ao longo da noite.
+  </div>
+</div>
+
+<!-- GARRAFAS -->
+<div id="tab-garrafas" class="panel">
+  <p style="font-size:0.78rem;color:var(--muted);margin-bottom:1rem">Quanto fatura cada garrafa ao esgotar, com 15% de desperdício (derrame, erros, tester). Quantidades refletem o que definiste na lista de compras.</p>
+  <div class="price-row">
+    <span><strong>Drink pequeno 300ml</strong> <input class="pinput" type="number" step="0.5" min="1" max="15" value="4" id="gp-peq" oninput="updateGarrafas()"> €</span>
+    <span><strong>Drink grande 500ml</strong> <input class="pinput" type="number" step="0.5" min="1" max="20" value="6" id="gp-grd" oninput="updateGarrafas()"> €</span>
+    <span style="flex-direction:column;align-items:flex-start;gap:4px">
+      <span>Mix peq / grd: <span id="lbl-mix" style="color:var(--accent)">50% / 50%</span></span>
+      <input type="range" min="0" max="100" step="10" value="50" id="mix-sl" oninput="updateGarrafas()" style="width:160px;height:3px;background:rgba(255,255,255,0.12);-webkit-appearance:none;border-radius:2px;margin-top:4px">
+    </span>
+  </div>
+  <div class="gar-grid" id="gar-cards"></div>
+  <div class="card" style="margin-top:0">
+    <h3>Resumo — ao esgotar todo o stock</h3>
+    <table>
+      <thead><tr><th>Espirituosa</th><th>Garrafas</th><th class="num">Faturação total</th><th class="num">Custo compra</th><th class="num">Lucro bruto</th></tr></thead>
+      <tbody id="tb-gar-tot"></tbody>
+      <tfoot>
+        <tr class="tfoot-row"><td colspan="2">Total espirituosas</td><td class="num" id="gar-tot-fat">—</td><td class="num" id="gar-tot-custo">—</td><td class="num" id="gar-tot-lucro">—</td></tr>
+      </tfoot>
+    </table>
+  </div>
+</div>
+
+<!-- RESULTADO -->
+<div id="tab-resultado" class="panel">
+  <div class="card" style="margin-bottom:1.25rem">
+    <h3>Parâmetros</h3>
+    <div class="slider-row"><label>Nº de pessoas</label><input type="range" min="200" max="500" step="10" value="325" id="sl-p" oninput="updateRes()"><span class="val" id="lbl-p">325</span></div>
+    <div class="slider-row"><label>% cerveja vendida</label><input type="range" min="30" max="100" step="5" value="85" id="sl-bp" oninput="updateRes()"><span class="val" id="lbl-bp">85%</span></div>
+    <div class="slider-row"><label>% drinks vendidos</label><input type="range" min="30" max="100" step="5" value="80" id="sl-sp" oninput="updateRes()"><span class="val" id="lbl-sp">80%</span></div>
+  </div>
+
+  <div class="price-row">
+    <span><strong>Cerveja pequena</strong> <input class="pinput" type="number" step="0.5" value="2" id="rv-cp" oninput="updateRes()"> €</span>
+    <span><strong>Cerveja grande</strong> <input class="pinput" type="number" step="0.5" value="3.5" id="rv-cg" oninput="updateRes()"> €</span>
+    <span><strong>Drink pequeno</strong> <input class="pinput" type="number" step="0.5" value="4" id="rv-dp" oninput="updateRes()"> €</span>
+    <span><strong>Drink grande</strong> <input class="pinput" type="number" step="0.5" value="6" id="rv-dg" oninput="updateRes()"> €</span>
+  </div>
+
+  <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.75rem;text-transform:uppercase;letter-spacing:0.06em">Cenário de consumo por pessoa (5h de festa)</div>
+  <div class="sc-grid">
+    <div class="sc-card selected" id="sc-moderado" onclick="selSc('moderado')">
+      <div class="name">Moderado</div>
+      <div class="desc">
+        1–2 cervejas<br>
+        1 drink branco<br>
+        Público misto / família
+      </div>
+    </div>
+    <div class="sc-card" id="sc-animado" onclick="selSc('animado')">
+      <div class="name">Animado</div>
+      <div class="desc">
+        2–3 cervejas<br>
+        2 drinks brancos<br>
+        Festa jovens adultos
+      </div>
+    </div>
+    <div class="sc-card" id="sc-intenso" onclick="selSc('intenso')">
+      <div class="name">Intenso</div>
+      <div class="desc">
+        3–4 cervejas<br>
+        3 drinks brancos<br>
+        Festa noturna universitária
+      </div>
+    </div>
+  </div>
+
+  <div class="metric-grid" id="res-met"></div>
+  <div class="card" id="res-table"></div>
+  <div class="result-box" id="res-box"></div>
+
+  <div class="note" style="margin-top:1rem">
+    <strong>Nota:</strong> Estes valores são estimativas baseadas em médias de consumo. O consumo real varia bastante com o tipo de público, temperatura, horário de início e se há entrada livre ou paga.
+    Um evento com entrada paga tende a ter consumo por pessoa mais elevado; eventos com bilhete incluído tendem a nivelar o consumo.
+  </div>
+</div>
+
+</main>
+
+<footer class="footer">SIMULADOR BAR DA FESTA · VALORES ESTIMADOS · USO INTERNO</footer>
+
+<script>
+// ─── DATA ────────────────────────────────────────────────────────────────────
+const SPIRITS = [
+  { id:'gin',     nome:"Gin (Gordon's / Beefeater 70cl)",  preco: 14.99, defaultQty: 5 },
+  { id:'vodka',   nome:"Vodka (Absolut / Smirnoff 70cl)",   preco: 15.99, defaultQty: 4 },
+  { id:'whisky',  nome:"Whisky (Jameson / J&B 70cl)",        preco: 17.99, defaultQty: 4 },
+];
+const MIXERS = [
+  { id:'tonica',  nome:"Água tónica (pack 1L × 6)",  preco: 3.49,  defaultQty: 13 },
+  { id:'cola',    nome:"Coca-Cola (2L)",               preco: 2.29,  defaultQty: 13 },
+  { id:'laranja', nome:"Sumo laranja (1L)",             preco: 1.89,  defaultQty: 6  },
+  { id:'limao',   nome:"Sumo limão (1L)",               preco: 1.89,  defaultQty: 6  },
+];
+const OUTROS = [
+  { id:'gelo',    nome:"Gelo 2 kg (sacos)",                  preco: 1.89, defaultQty: 16 },
+  { id:'limoes',  nome:"Limões (saco)",                       preco: 1.99, defaultQty: 2  },
+  { id:'limas',   nome:"Limas (saco)",                        preco: 2.49, defaultQty: 2  },
+  { id:'cop500',  nome:"Copos plástico 500ml (50un)",          preco: 3.99, defaultQty: 6  },
+  { id:'cop300',  nome:"Copos plástico 300ml (50un)",          preco: 2.99, defaultQty: 6  },
+  { id:'papel',   nome:"Papel cozinha (rolo × 3)",             preco: 2.49, defaultQty: 4  },
+  { id:'wc',      nome:"Papel higiénico (4un)",               preco: 2.99, defaultQty: 4  },
+  { id:'lixo',    nome:"Sacos do lixo 50L (20un)",            preco: 2.99, defaultQty: 3  },
+  { id:'guard',   nome:"Guardanapos (200un)",                  preco: 1.99, defaultQty: 3  },
+];
+
+// ─── SCENARIOS ──────────────────────────────────────────────────────────────
+// cv = cervejas por pessoa, sp = drinks espirituosos por pessoa, baseado em 5h
+const SCS = {
+  moderado: { cv: 1.5, sp: 1.0,  label: 'Moderado' },
+  animado:  { cv: 2.5, sp: 2.0,  label: 'Animado'  },
+  intenso:  { cv: 3.5, sp: 3.0,  label: 'Intenso'  },
+};
+let curSc = 'moderado';
+const DESP = 0.15; // 15% desperdício
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+const f2  = n => (+n).toFixed(2) + ' €';
+const fi  = n => Math.round(n).toLocaleString('pt-PT') + ' €';
+const gQty = id => { const el = document.getElementById('q-'  + id); return el ? (parseFloat(el.value) || 0) : 0; };
+const gPu  = id => { const el = document.getElementById('pu-' + id); return el ? (parseFloat(el.value) || 0) : 0; };
+
+// ─── BUILD TABLES (once on load) ─────────────────────────────────────────────
+function buildTables() {
+  // SPIRITS
+  const tbS = document.getElementById('tb-spirits');
+  tbS.innerHTML = '';
+  SPIRITS.forEach(s => {
+    tbS.innerHTML += `<tr>
+      <td>${s.nome}</td>
+      <td style="text-align:center"><input class="qinput" id="q-${s.id}" type="number" min="0" max="99" step="1" value="${s.defaultQty}" oninput="recalcAll()"></td>
+      <td style="text-align:right"><input class="puinput" id="pu-${s.id}" type="number" min="0" max="999" step="0.01" value="${s.preco}" oninput="recalcAll()"> €</td>
+      <td class="num" id="tot-${s.id}">—</td>
+    </tr>`;
+  });
+
+  // MIXERS
+  const tbM = document.getElementById('tb-mixers');
+  tbM.innerHTML = '';
+  MIXERS.forEach(m => {
+    tbM.innerHTML += `<tr>
+      <td>${m.nome}</td>
+      <td style="text-align:center"><input class="qinput" id="q-${m.id}" type="number" min="0" max="200" step="1" value="${m.defaultQty}" oninput="recalcAll()"></td>
+      <td style="text-align:right"><input class="puinput" id="pu-${m.id}" type="number" min="0" max="999" step="0.01" value="${m.preco}" oninput="recalcAll()"> €</td>
+      <td class="num" id="tot-${m.id}">—</td>
+    </tr>`;
+  });
+
+  // OUTROS
+  const tbO = document.getElementById('tb-outros');
+  tbO.innerHTML = '';
+  OUTROS.forEach(o => {
+    tbO.innerHTML += `<tr>
+      <td>${o.nome}</td>
+      <td style="text-align:center"><input class="qinput" id="q-${o.id}" type="number" min="0" max="200" step="1" value="${o.defaultQty}" oninput="recalcAll()"></td>
+      <td style="text-align:right"><input class="puinput" id="pu-${o.id}" type="number" min="0" max="999" step="0.01" value="${o.preco}" oninput="recalcAll()"> €</td>
+      <td class="num" id="tot-${o.id}">—</td>
+    </tr>`;
+  });
+}
+
+// ─── RECALC ALL ──────────────────────────────────────────────────────────────
+function recalcAll() {
+  let totS = 0, litS = 0;
+  SPIRITS.forEach(s => {
+    const q = gQty(s.id), p = gPu(s.id), t = q * p;
+    totS += t; litS += q * 0.7;
+    const el = document.getElementById('tot-' + s.id);
+    if (el) el.textContent = f2(t);
+  });
+  document.getElementById('tot-s').textContent = f2(totS);
+
+  let totM = 0;
+  MIXERS.forEach(m => {
+    const q = gQty(m.id), p = gPu(m.id), t = q * p;
+    totM += t;
+    const el = document.getElementById('tot-' + m.id);
+    if (el) el.textContent = f2(t);
+  });
+  document.getElementById('tot-m').textContent = f2(totM);
+
+  const nBarris = parseFloat(document.getElementById('q-barris').value) || 0;
+  const pBarril = parseFloat(document.getElementById('p-barril').value) || 90;
+  const totB = nBarris * pBarril;
+  document.getElementById('tot-b').textContent = f2(totB);
+  document.getElementById('beer-litros-note').textContent = `${nBarris} barril${nBarris!==1?'s':''} = ${nBarris*30} L de cerveja`;
+  document.getElementById('hd-barris').textContent = `${nBarris} barril${nBarris!==1?'s':''} × 30L cerveja`;
+
+  let totO = 0;
+  OUTROS.forEach(o => {
+    const q = gQty(o.id), p = gPu(o.id), t = q * p;
+    totO += t;
+    const el = document.getElementById('tot-' + o.id);
+    if (el) el.textContent = f2(t);
+  });
+  document.getElementById('tot-o').textContent = f2(totO);
+
+  const grand = totS + totM + totB + totO;
+  document.getElementById('m-grand').textContent = fi(grand);
+  document.getElementById('m-cpp').textContent = f2(grand / 325);
+  document.getElementById('m-ls').textContent = litS.toFixed(1) + ' L';
+  document.getElementById('m-lb').textContent = (nBarris * 30) + ' L';
+  document.getElementById('m-lb-sub').textContent = nBarris + ' × 30 L';
+
+  updateGarrafas();
+  updateRes();
+}
+
+// ─── GARRAFAS ────────────────────────────────────────────────────────────────
+function updateGarrafas() {
+  const pPeq = parseFloat(document.getElementById('gp-peq').value) || 4;
+  const pGrd = parseFloat(document.getElementById('gp-grd').value) || 6;
+  const mixPeq = parseInt(document.getElementById('mix-sl').value);
+  const mixGrd = 100 - mixPeq;
+  document.getElementById('lbl-mix').textContent = mixPeq + '% / ' + mixGrd + '%';
+
+  const mlUtil = 700 * (1 - DESP); // ~595ml
+  const doseMl = 40 * (mixPeq / 100) + 80 * (mixGrd / 100);
+  const dosesTot = mlUtil / doseMl;
+  const dPeq = dosesTot * (mixPeq / 100);
+  const dGrd = dosesTot * (mixGrd / 100);
+  const recGarr = dPeq * pPeq + dGrd * pGrd;
+
+  const cards = document.getElementById('gar-cards'); cards.innerHTML = '';
+  const tbT   = document.getElementById('tb-gar-tot'); tbT.innerHTML = '';
+  let totF = 0, totC = 0, totL = 0;
+
+  SPIRITS.forEach(s => {
+    const q = gQty(s.id);
+    const custo = q * gPu(s.id);
+    const fat = recGarr * q, lucro = fat - custo;
+    totF += fat; totC += custo; totL += lucro;
+    const nomeCurto = s.nome.split('(')[0].trim();
+
+    cards.innerHTML += `<div class="gar-card">
+      <div class="gname">${nomeCurto}</div>
+      <div class="gml">${q} garrafas × 700 ml &nbsp;·&nbsp; 15% desperdício</div>
+      <div class="gar-row"><span class="lbl">Doses / garrafa</span><span class="vg">${Math.round(dosesTot)}</span></div>
+      <div class="gar-row"><span class="lbl">— copos 300ml (40ml)</span><span class="vg">${Math.round(dPeq)}</span></div>
+      <div class="gar-row"><span class="lbl">— copos 500ml (80ml)</span><span class="vg">${Math.round(dGrd)}</span></div>
+      <div class="gar-row"><span class="lbl">Receita / garrafa</span><span class="vg green">${f2(recGarr)}</span></div>
+      <div class="gar-row"><span class="lbl">Receita total (${q} garr.)</span><span class="vg green">${fi(fat)}</span></div>
+      <div class="gar-row"><span class="lbl">Custo compra</span><span class="vg red">−${fi(custo)}</span></div>
+      <div class="gar-row"><span class="lbl">Lucro bruto</span><span class="vg green">+${fi(lucro)}</span></div>
+    </div>`;
+
+    tbT.innerHTML += `<tr>
+      <td>${nomeCurto} (${q}×)</td><td>${q}</td>
+      <td class="num">${fi(fat)}</td>
+      <td class="num">${fi(custo)}</td>
+      <td class="num" style="color:var(--accent2)">+${fi(lucro)}</td>
+    </tr>`;
+  });
+
+  document.getElementById('gar-tot-fat').textContent   = fi(totF);
+  document.getElementById('gar-tot-custo').textContent = fi(totC);
+  document.getElementById('gar-tot-lucro').textContent = '+' + fi(totL);
+}
+
+// ─── RESULTADO ───────────────────────────────────────────────────────────────
+function updateRes() {
+  const pessoas = parseInt(document.getElementById('sl-p').value) || 325;
+  document.getElementById('lbl-p').textContent = pessoas;
+  document.getElementById('hd-pessoas').textContent = pessoas + ' pessoas';
+
+  const bPct = parseInt(document.getElementById('sl-bp').value) / 100;
+  const sPct = parseInt(document.getElementById('sl-sp').value) / 100;
+  document.getElementById('lbl-bp').textContent = Math.round(bPct * 100) + '%';
+  document.getElementById('lbl-sp').textContent = Math.round(sPct * 100) + '%';
+
+  const pCp = parseFloat(document.getElementById('rv-cp').value) || 2;
+  const pCg = parseFloat(document.getElementById('rv-cg').value) || 3.5;
+  const pDp = parseFloat(document.getElementById('rv-dp').value) || 4;
+  const pDg = parseFloat(document.getElementById('rv-dg').value) || 6;
+
+  const sc = SCS[curSc];
+
+  // cervejas: baseado em litros disponíveis
+  const nBarris = parseFloat(document.getElementById('q-barris').value) || 10;
+  const pBarril = parseFloat(document.getElementById('p-barril').value) || 90;
+  const litrosCervTotal = nBarris * 30;
+  const litrosCervVendidos = litrosCervTotal * bPct;
+  // copo peq ~0.22L líquido real, copo grd ~0.38L
+  const totalCoposCerv = litrosCervVendidos / 0.30; // média 300ml
+  const cPeqV = Math.round(totalCoposCerv * 0.55);
+  const cGrdV = Math.round(totalCoposCerv * 0.45);
+  const recC = cPeqV * pCp + cGrdV * pCg;
+
+  // drinks: baseado em consumo estimado por pessoa × % vendido
+  const totDrinks = Math.round(pessoas * sc.sp * sPct);
+  const drPeq = Math.round(totDrinks * 0.5);
+  const drGrd = totDrinks - drPeq;
+  const recD = drPeq * pDp + drGrd * pDg;
+
+  const recTot = recC + recD;
+
+  // custo
+  let totS = 0, totM = 0, totO = 0;
+  SPIRITS.forEach(s => totS += gQty(s.id) * gPu(s.id));
+  MIXERS.forEach(m  => totM += gQty(m.id) * gPu(m.id));
+  OUTROS.forEach(o  => totO += gQty(o.id) * gPu(o.id));
+  const totB = nBarris * pBarril;
+  const custoTot = totS + totM + totB + totO;
+
+  const lucro = recTot - custoTot;
+  const margem = recTot > 0 ? (lucro / recTot * 100) : 0;
+
+  document.getElementById('res-met').innerHTML = `
+    <div class="metric"><div class="label">Receita estimada</div><div class="value">${fi(recTot)}</div></div>
+    <div class="metric"><div class="label">Custo total</div><div class="value">${fi(custoTot)}</div></div>
+    <div class="metric"><div class="label">Resultado</div><div class="value" style="color:${lucro>=0?'var(--accent2)':'var(--red)'}">${lucro>=0?'+':''}${fi(lucro)}</div></div>
+    <div class="metric"><div class="label">Margem global</div><div class="value">${Math.round(margem)}%</div></div>
+  `;
+
+  document.getElementById('res-table').innerHTML = `
+    <h3>Detalhe por categoria</h3>
+    <table>
+      <thead><tr><th>Categoria</th><th>Unidades est.</th><th class="num">Receita</th></tr></thead>
+      <tbody>
+        <tr><td>Cerveja pequena 300ml</td><td>${cPeqV.toLocaleString('pt-PT')} copos × ${f2(pCp)}</td><td class="num">${fi(cPeqV*pCp)}</td></tr>
+        <tr><td>Cerveja grande 500ml</td><td>${cGrdV.toLocaleString('pt-PT')} copos × ${f2(pCg)}</td><td class="num">${fi(cGrdV*pCg)}</td></tr>
+        <tr><td>Drink pequeno 300ml</td><td>${drPeq.toLocaleString('pt-PT')} copos × ${f2(pDp)}</td><td class="num">${fi(drPeq*pDp)}</td></tr>
+        <tr><td>Drink grande 500ml</td><td>${drGrd.toLocaleString('pt-PT')} copos × ${f2(pDg)}</td><td class="num">${fi(drGrd*pDg)}</td></tr>
+      </tbody>
+      <tfoot>
+        <tr class="tfoot-row"><td colspan="2" style="text-align:right">Total receita</td><td class="num">${fi(recTot)}</td></tr>
+        <tr class="tfoot-row"><td colspan="2" style="text-align:right">— custo total compras</td><td class="num">−${fi(custoTot)}</td></tr>
+      </tfoot>
+    </table>
+  `;
+
+  document.getElementById('res-box').innerHTML = `
+    <div>
+      <div class="big ${lucro>=0?'green':'red'}">${lucro>=0?'+':''}${fi(lucro)}</div>
+      <div class="ctx">Cenário ${sc.label} · ${pessoas} pessoas · ${litrosCervVendidos.toFixed(0)}L cerveja · ${totDrinks.toLocaleString('pt-PT')} drinks</div>
+    </div>
+  `;
+}
+
+// ─── TABS & SCENARIO ─────────────────────────────────────────────────────────
+function selSc(s) {
+  curSc = s;
+  ['moderado','animado','intenso'].forEach(x =>
+    document.getElementById('sc-'+x).classList.toggle('selected', x===s)
+  );
+  updateRes();
+}
+
+function showTab(id, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  if (btn) btn.classList.add('active');
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+buildTables();
+recalcAll();
+</script>
+</body>
+</html>
